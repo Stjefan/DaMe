@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="PfadZielordner" Type="System.String" Scope="User">
-      <Value Profile="(Default)">D:\</Value>
+      <Value Profile="(Default)">C:\Users\stsch\OneDrive\Dokumente\DetectDame\Zielordner</Value>
     </Setting>
     <Setting Name="SekWetter" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">20</Value>

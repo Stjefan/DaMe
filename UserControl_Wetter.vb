@@ -1,5 +1,7 @@
 Option Strict Off
 Imports System.Drawing
+Imports System.Globalization
+Imports System.Threading
 
 Public Class UserControl_Wetter
 
@@ -11,10 +13,16 @@ Public Class UserControl_Wetter
 
     'Private Const SekWetter As Integer = 180
 
+
     Private Sub UserControl_Wetter_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         'Dim tmpDate As Date = Me.DTP_1.Value
         'Set_Wetter(New Date(tmpDate.Year, tmpDate.Month, tmpDate.Day, 6, 0, 0), _
         'New Date(tmpDate.AddDays(1).Year, tmpDate.AddDays(1).Month, tmpDate.AddDays(1).Day, 6, 0, 0))
+        Dim ci As CultureInfo = New CultureInfo("de-DE")
+        ci.NumberFormat.NumberDecimalSeparator = ","
+        Thread.CurrentThread.CurrentCulture = ci
+        Thread.CurrentThread.CurrentUICulture = ci
+
         Aktuallisieren()
     End Sub
 
@@ -40,15 +48,15 @@ Public Class UserControl_Wetter
             '            Me.PB_Temperatur.Width, i * CInt(Me.PB_Luftfeuchte.Height / IntervalleAnz)) '12))
             'Else
             If Math.IEEERemainder(i, 2) = 0 Then
-                gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Luftfeuchte.Height / IntervalleAnz), _
+                gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Luftfeuchte.Height / IntervalleAnz),
                     Me.PB_Temperatur.Width, i * CInt(Me.PB_Luftfeuchte.Height / IntervalleAnz))
             Else
-                gr.DrawLine(Pens.LightGray, 0, i * CInt(Me.PB_Luftfeuchte.Height / IntervalleAnz), _
+                gr.DrawLine(Pens.LightGray, 0, i * CInt(Me.PB_Luftfeuchte.Height / IntervalleAnz),
                     Me.PB_Temperatur.Width, i * CInt(Me.PB_Luftfeuchte.Height / IntervalleAnz))
             End If
         Next
         'mittlerer Luftdruck
-        gr.DrawLine(Pens.LightCoral, 0, Me.PB_Luftdruck.Height - CInt((Me.PB_Luftdruck.Height * (1013.25 - MinWert)) / Wertebereich), _
+        gr.DrawLine(Pens.LightCoral, 0, Me.PB_Luftdruck.Height - CInt((Me.PB_Luftdruck.Height * (1013.25 - MinWert)) / Wertebereich),
                     Me.PB_Temperatur.Width, Me.PB_Luftdruck.Height - CInt((Me.PB_Luftdruck.Height * (1013.25 - MinWert)) / Wertebereich))
 
 
@@ -62,8 +70,11 @@ Public Class UserControl_Wetter
                 If Wetter(iDS) <> "" Then
                     With Wetter(iDS)
                         Dim Zeit As Date = .Split(Chr(59))(0) '.Zeit
-                        Dim Wert As String = .Split(Chr(59))(2).Replace(".", ",") '.Luftdruck
-                        If Wert <> "N/A" Then '-1 Then
+                        Dim Luftdruck As String = .Split(Chr(59))(2).Replace(".", ",") '.Luftdruck
+                        Dim result As Integer
+                        Dim parsingSuccesful As Boolean = Double.TryParse(Luftdruck, result)
+                        Dim Wert As Double = result
+                        If Wert <> 0 Then '-1 Then
                             'Umrechnung der Zeit in Pixel (vom Ursprung entfernt auf x-Achse) -> 1 Pixel entspricht 3 min
                             '-> Pixelentfernung der Zeit: CInt(((.Zeit.Hour - 6) * 60 + .Zeit.Minute) / 3)                        
                             'Dim x As Integer = CInt(((Zeit.AddHours(-6).Hour) * 60 + Zeit.Minute) / 3)
@@ -92,7 +103,7 @@ Public Class UserControl_Wetter
         Next
         'y-Achse
         For i As Integer = 1 To 5
-            gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Luftfeuchte.Height / 5), _
+            gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Luftfeuchte.Height / 5),
                     Me.PB_Luftfeuchte.Width, i * CInt(Me.PB_Luftfeuchte.Height / 5))
         Next
 
@@ -104,7 +115,12 @@ Public Class UserControl_Wetter
                 If Wetter(iDS) <> "" Then
                     With Wetter(iDS) '.Luftfeuchtigkeit
                         Dim Zeit As Date = .Split(Chr(59))(0) '.Zeit
-                        Dim Wert As Single = .Split(Chr(59))(3).Replace(".", ",") '.Luftfeuchtigkeit
+                        'Dim Wert As Single = .Split(Chr(59))(3).Replace(".", ",") '.Luftfeuchtigkeit
+
+                        Dim result As Integer
+                        Dim parsingSuccesful As Boolean = Double.TryParse(.Split(Chr(59))(3).Replace(".", ","), result)
+                        Dim Wert As Integer = result
+
                         '.Luftfeuchtigkeit.Wert = CSng(tmpZeile(iFeuchtigkeit).Replace(".", ","))
                         If Wert >= 0 And Wert <= 100 Then '<> -1 Then
                             'Umrechnung der Zeit in Pixel (vom Ursprung entfernt auf x-Achse) -> 1 Pixel entspricht 3 min
@@ -136,8 +152,10 @@ Public Class UserControl_Wetter
                 If Wetter(iDS) <> "" Then
                     With Wetter(iDS) '.Regen
                         Dim Zeit As Date = .Split(Chr(59))(0) '.Zeit
-                        Dim Wert As Integer = .Split(Chr(59))(7).Replace(".", ",") '.Regen
-                        If Wert = 1 Then '<> -1  Then
+                        Dim result As Integer
+                        Dim parsingSuccesful As Boolean = Double.TryParse(.Split(Chr(59))(7).Replace(".", ","), result)
+                        Dim Wert As Integer = result '.Regen
+                        If Wert >= 1 Then '<> -1  Then
                             Dim tmpZeit As Date = Zeit
 
                             'Umrechnung der Zeit in Pixel (vom Ursprung entfernt auf x-Achse) -> 1 Pixel entspricht 3 min
@@ -176,13 +194,13 @@ Public Class UserControl_Wetter
         Dim tmpIntervall As Integer = CInt(Me.PB_Temperatur.Height / 15)
         For i As Integer = 1 To 16
             If i = 9 Then
-                gr.DrawLine(Pens.LightCoral, 0, i * CInt(Me.PB_Temperatur.Height / 16), _
+                gr.DrawLine(Pens.LightCoral, 0, i * CInt(Me.PB_Temperatur.Height / 16),
                         Me.PB_Temperatur.Width, i * CInt(Me.PB_Temperatur.Height / 16))
             ElseIf Math.IEEERemainder(i, 2) <> 0 Then
-                gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Temperatur.Height / 16), _
+                gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Temperatur.Height / 16),
                     Me.PB_Temperatur.Width, i * CInt(Me.PB_Temperatur.Height / 16))
             Else
-                gr.DrawLine(Pens.LightGray, 0, i * CInt(Me.PB_Temperatur.Height / 16), _
+                gr.DrawLine(Pens.LightGray, 0, i * CInt(Me.PB_Temperatur.Height / 16),
                     Me.PB_Temperatur.Width, i * CInt(Me.PB_Temperatur.Height / 16))
             End If
         Next
@@ -195,7 +213,10 @@ Public Class UserControl_Wetter
                 If Wetter(iDS) <> "" Then
                     With Wetter(iDS) '.Temperatur
                         Dim Zeit As Date = .Split(Chr(59))(0) '.Zeit
-                        Dim Wert As Single = .Split(Chr(59))(1).Replace(".", ",") '.Temperatur
+                        Dim result As Integer
+                        Dim parsingSuccesful As Boolean = Double.TryParse(.Split(Chr(59))(1).Replace(".", ","), result)
+                        Dim Wert As Integer = result
+                        'Dim Wert As Single = .Split(Chr(59))(1).Replace(".", ",") '.Temperatur
                         '.Temperatur.Wert = CSng(tmpZeile(iTemperatur).Replace(".", ","))
                         If Wert >= -35 And Wert <= 45 Then '<> -1 Then
                             'Umrechnung der Zeit in Pixel (vom Ursprung entfernt auf x-Achse) -> 1 Pixel entspricht 3 min
@@ -227,10 +248,10 @@ Public Class UserControl_Wetter
         Dim tmpIntervall As Integer = CInt(Me.PB_Windgeschwindigkeit.Height / 11)
         For i As Integer = 1 To 12
             If Math.IEEERemainder(i, 2) = 0 Then
-                gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Windgeschwindigkeit.Height / 12), _
+                gr.DrawLine(Pens.Gray, 0, i * CInt(Me.PB_Windgeschwindigkeit.Height / 12),
                     Me.PB_Windgeschwindigkeit.Width, i * CInt(Me.PB_Windgeschwindigkeit.Height / 12))
             Else
-                gr.DrawLine(Pens.LightGray, 0, i * CInt(Me.PB_Windgeschwindigkeit.Height / 12), _
+                gr.DrawLine(Pens.LightGray, 0, i * CInt(Me.PB_Windgeschwindigkeit.Height / 12),
                     Me.PB_Windgeschwindigkeit.Width, i * CInt(Me.PB_Windgeschwindigkeit.Height / 12))
             End If
         Next
@@ -243,7 +264,12 @@ Public Class UserControl_Wetter
 
                     With Wetter(iDS) '.Windgeschwindigkeit
                         Dim Zeit As Date = .Split(Chr(59))(0) '.Zeit
-                        Dim Wert As Single = .Split(Chr(59))(4).Replace(".", ",") * 3.6 '.Windgeschwindigkeit
+
+                        Dim result As Integer
+                        Dim parsingSuccesful As Boolean = Double.TryParse(.Split(Chr(59))(4).Replace(".", ","), result)
+                        Dim Wert As Integer = result * 3.6
+
+                        'Dim Wert As Single = .Split(Chr(59))(4).Replace(".", ",") * 3.6 '.Windgeschwindigkeit
 
                         If Wert >= 0 And Wert <= 120 Then '<> -1 Then
                             'Umrechnung der Zeit in Pixel (vom Ursprung entfernt auf x-Achse) -> 1 Pixel entspricht 3 min
@@ -338,9 +364,9 @@ Public Class UserControl_Wetter
             End Select
 
         Next
-        
+
     End Sub
-   
+
 #End Region
 
     Private Sub DTP_1_ValueChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles DTP_1.ValueChanged
